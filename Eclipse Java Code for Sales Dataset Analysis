@@ -1,0 +1,75 @@
+package salesAnalysisMec;
+import java.io.IOException;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+
+public class sales
+{
+       
+public static class MapperClass extends Mapper<Object, Text, Text, IntWritable>
+{
+private final static IntWritable first1 = new IntWritable(1);
+private Text txt1 = new Text();
+
+public void map(Object k1, Text v1, Context c1) throws IOException,
+                InterruptedException {
+        // Assume each line in the value Text is a sales record
+        String[] segments = v1.toString().split(",");
+        int Area_Code = Integer.parseInt(segments[0]);
+        String State = segments[1];
+        String Market = segments[2];
+        String Market_Size = segments[3];
+        int Profit = Integer.parseInt(segments[4]);
+        int Margin = Integer.parseInt(segments[5]);
+        int Sales = Integer.parseInt(segments[6]);
+        int COGS = Integer.parseInt(segments[7]);
+        int Total_Expenses = Integer.parseInt(segments[8]);
+        int Marketing = Integer.parseInt(segments[9]);
+        int Inventory = Integer.parseInt(segments[10]);
+        int Budget_Profit = Integer.parseInt(segments[11]);
+        int Budget_COGS = Integer.parseInt(segments[12]);
+        int Budget_Margin = Integer.parseInt(segments[13]);
+        int Budget_Sales = Integer.parseInt(segments[14]);
+        int ProductId = Integer.parseInt(segments[15]);
+
+        txt1.set(Market);
+        c1.write(txt1, new IntWritable(Sales));
+}
+}
+
+public static class ReducerClass extends Reducer<Text, IntWritable, Text, IntWritable> {
+private IntWritable output1 = new IntWritable();
+
+public void reduce(Text k1, Iterable<IntWritable> val1, Context c1)
+                throws IOException, InterruptedException {
+        int sumfunction = 0;
+        for (IntWritable val : val1) {
+                sumfunction += val.get();
+        }
+        output1.set(sumfunction);
+        c1.write(k1, output1);
+}
+}
+
+public static void main(String[] args) throws Exception
+{
+Configuration set1 = new Configuration();
+Job hadoop1 = Job.getInstance(set1, "sales analysis");
+hadoop1.setJarByClass(sales.class);
+hadoop1.setMapperClass(MapperClass.class);
+hadoop1.setCombinerClass(ReducerClass.class);
+hadoop1.setReducerClass(ReducerClass.class);
+hadoop1.setOutputKeyClass(Text.class);
+hadoop1.setOutputValueClass(IntWritable.class);
+FileInputFormat.addInputPath(hadoop1, new Path(args[0]));
+FileOutputFormat.setOutputPath(hadoop1, new Path(args[1]));
+System.exit(hadoop1.waitForCompletion(true) ? 0 : 1);
+}
+}
